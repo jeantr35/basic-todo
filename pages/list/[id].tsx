@@ -4,7 +4,8 @@ import AddItemWidget from "../../components/list/AddItemWidget";
 import { Todo } from "../../components/list/ListTypes";
 import TodoWrapper from "../../components/list/TodoWrapper";
 import uuid from 'uuid-random';
-import { IResponse } from "../api/fetchTypes";
+import { getTodos, updateOrCreateTodo, deleteTodo} from "../../utils/FirestoreUtils";
+
 
 interface Props {
     initialTodos: Todo[]
@@ -22,7 +23,9 @@ const TodoListPage = ({initialTodos}:Props) => {
         return todos.filter(todo => todo.isCompleted)
     }
     const addNewTodo = (label:string) => {
-        setTodos(actualTodos => [{id:uuid(), isCompleted:false, label:label}, ...actualTodos])
+        const newTodo: Todo = {id:uuid(), isCompleted:false, label:label};
+        updateOrCreateTodo(newTodo);
+        setTodos(actualTodos => [newTodo, ...actualTodos]);
     }
 
     const handleCheckboxChange = (e:ChangeEvent<HTMLInputElement>, id:string) => {
@@ -30,12 +33,14 @@ const TodoListPage = ({initialTodos}:Props) => {
         let newArr = [...todos];
         const indexOfItem = newArr.map(el => el.id).indexOf(id);
         newArr[indexOfItem] = {...newArr[indexOfItem],isCompleted: isChecked};
+        updateOrCreateTodo(newArr[indexOfItem]);
         setTodos(newArr);
     }
 
     const handleDeleteTodo = (id:string) => {
         let newArr = [...todos];
         newArr = newArr.filter(el => el.id !== id);
+        deleteTodo(id);
         setTodos(newArr);
     }
 
@@ -51,7 +56,8 @@ const TodoListPage = ({initialTodos}:Props) => {
 export const getServerSideProps: GetServerSideProps = async () => {
     //const response = await fetch("http://localhost:3000/hello");
     //const dataResponse: IResponse = await response.json();
-    const initialTodos: Todo[] = [{id:'1', isCompleted:false, label:"Todo1"},{id:'2', isCompleted:true, label:"Todo2"},{id:'3', isCompleted:false, label:"Todo3"}]
+    
+    const initialTodos: Todo[] = await getTodos();
 
     return {
       props: { initialTodos }, // will be passed to the page component as props
